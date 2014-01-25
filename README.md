@@ -1,10 +1,7 @@
 PL-MRF
 ======
-if you want to run the program, please install sbt and input below in this directory,  
 
-    sbt run
+    sbt assembly
+    java -jar target/scala-2.10/PL-MRF-assembly-0.0.1.jar [train|decode] InputFile
 
-so you can see the string  
-
-    Hello, World...
-
+:)
