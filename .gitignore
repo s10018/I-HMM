@@ -9,6 +9,7 @@ src_managed/
 project/boot/
 project/plugins/project/
 project/ensime.sbt
+test/test.txt
 .ensime*
 
 # Scala-IDE specific
