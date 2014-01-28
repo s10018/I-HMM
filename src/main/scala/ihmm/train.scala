@@ -49,10 +49,11 @@ object Train {
       print("\n")
     }
     vocabulary.foreach(println)
+    println(Optimizer.run(sentences, vocabulary, stateN))
   }
 
   def readAndSetData(testPath: String, cutOff: Int): ListBuffer[Array[String]] = {
-    def convert2words(testPath: String): ListBuffer[Array[String]] = {
+    def convert2sentences(testPath: String): ListBuffer[Array[String]] = {
       def split2words(sentence: String): Array[String] = {
         sentence.split(" ")
       }
@@ -70,13 +71,9 @@ object Train {
           }
         }
       }
-      val lowFreqWord = countFreq(sentences)
-        .filter { case (word, count) => count < cutOff }
-        .keys
-        .toList
-      return lowFreqWord
+      countFreq(sentences).filter { case (word, count) => count < cutOff }.keys.toList
     }
-    val sentences = convert2words(testPath)
+    val sentences   = convert2sentences(testPath)
     val lowFreqWord = extractLowFreqWord(sentences, cutOff)
 
     sentences.map { sent =>
