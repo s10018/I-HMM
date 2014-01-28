@@ -11,10 +11,10 @@ object Main {
     def parse (map : Map[String, String], args: List[String]): Map[String, String] = {
       args match {
         case Nil => map
-        case "train" :: file :: rest 
-            => parse(map ++ Map("mode" -> "train") ++ Map("inputfile" -> file), rest)
-        case "decode" :: file :: rest 
-            => parse(map ++ Map("mode" -> "decode") ++ Map("inputfile" -> file), rest)
+        case "train" :: rest
+            => Train.parseTrain(map ++ "mode" -> "train", rest)
+        case "decode" :: rest
+            => Decode.parseDecode(map ++ "mode" -> "decode", rest)
         case _ 
             => Map("mode" -> "")
       }
@@ -26,8 +26,8 @@ object Main {
     try {
       val opt = ArgumentParse(Map(), args.toList)
       opt.get("mode") match {
-        case Some("train") => Train.train(opt.get("inputfile"))
-        case Some("decode") => Decode.decode(opt.get("inputfile"))
+        case Some("train") => Train.train(opt)
+        case Some("decode") => Decode.decode(opt)
         case _ => error("Illegal Argument!!")
       }
     } catch {
