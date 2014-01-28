@@ -2,11 +2,11 @@
 import AssemblyKeys._
 import com.typesafe.sbt.SbtStartScript
 
-name := "PL-MRF"
+name := "I-HMM"
 
 version := "0.0.1"
 
-mainClass in Compile := Some("scala.plmrf.Main")
+mainClass in Compile := Some("scala.ihmm.Main")
 
 libraryDependencies  ++= Seq(
   // other dependencies here
@@ -22,9 +22,9 @@ resolvers ++= Seq(
   "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/releases/"
 )
 
-jarName in assembly := "PL-MRF.jar"
+jarName in assembly := "I-HMM.jar"
 
-mainClass in assembly := Some("scala.plmrf.Main")
+mainClass in assembly := Some("scala.ihmm.Main")
 
 assemblySettings
 
