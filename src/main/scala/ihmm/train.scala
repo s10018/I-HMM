@@ -18,5 +18,15 @@ object Train {
       case _ => { error("Illegal Argument!!") }
     }
   }
+  def _convert2words(file_path : String): collection.mutable.ListBuffer[Array[String]] = {
+    def split2words(sentence: String): Array[String] = {
+      sentence.split(" ")
+    }
+    val sentences = new collection.mutable.ListBuffer[Array[String]]
+    for(line <- Source.fromFile(file_path).getLines()) {
+      sentences += split2words(line)
+    }
 
+    return sentences
+  }
 }
