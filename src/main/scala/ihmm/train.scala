@@ -6,6 +6,7 @@ import collection.mutable.ListBuffer
 
 object Train {
   val usage = "usage: jave -jar PL-MRF.jar train -test testfile -layer layer_n -state state_n -c cut-off -dump dumpfile"
+  val unknow = "##UNKOWN##"
 
   def parseTrain(opt: Map[String, String], rest :List[String]): Map[String, String] = {
     try {
@@ -37,14 +38,17 @@ object Train {
     val stateN: Int = opt("stateN").toInt
     val cutOff: Int = opt("cutOff").toInt
 
-    println(testPath)
-    println(dumpPath)
-    println(layerN)
-    println(stateN)
-    println(cutOff)
+    println(testPath);println(dumpPath);println(layerN);println(stateN);println(cutOff)
 
     val sentences = readAndSetData(testPath, cutOff)
-    //lowFreqWord.foreach(token => println(token))
+    val vocabulary = examinVocabulary(sentences)
+    sentences.foreach { sent =>
+      sent.foreach { word =>
+        print(word + " ")
+      }
+      print("\n")
+    }
+    vocabulary.foreach(println)
   }
 
   def readAndSetData(testPath: String, cutOff: Int): ListBuffer[Array[String]] = {
@@ -61,20 +65,29 @@ object Train {
     def extractLowFreqWord(sentences: ListBuffer[Array[String]], cutOff: Int): List[String] = {
       def countFreq(sentences: ListBuffer[Array[String]]): collection.mutable.Map[String, Int] = {
         sentences.foldLeft(collection.mutable.Map.empty[String, Int]) { (mapC, sentArr) =>
-          sentArr.toList.foldLeft(mapC) { (mapC_, token) =>
-            mapC_ + (token -> (mapC_.getOrElse(token, 0) + 1))
+          sentArr.toList.foldLeft(mapC) { (mapC_, word) =>
+            mapC_ + (word -> (mapC_.getOrElse(word, 0) + 1))
           }
         }
       }
       val lowFreqWord = countFreq(sentences)
-        .filter { case (token, count) => count < cutOff }
+        .filter { case (word, count) => count < cutOff }
         .keys
         .toList
       return lowFreqWord
     }
     val sentences = convert2words(testPath)
     val lowFreqWord = extractLowFreqWord(sentences, cutOff)
-    lowFreqWord.foreach(token => println(token))
-    return sentences
+
+    sentences.map { sent =>
+      sent.map( word => if (lowFreqWord.contains(word)) unknow else word )
+    }
+  }
+
+  def examinVocabulary(sentences: ListBuffer[Array[String]]): List[String] = {
+    sentences.foldLeft(ListBuffer.empty[String]) { (vocab, sentence) =>
+      sentence.foldLeft(vocab) { (vocab_, word) => vocab_ += word }
+    }
+    .distinct.toList
   }
 }
