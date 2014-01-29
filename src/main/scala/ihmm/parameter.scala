@@ -2,6 +2,9 @@ package scala.ihmm
 
 import collection.mutable.{ListBuffer => ListBf}
 
+type Gamma = ListBf[ListBf[Double]]
+type Xi    = ListBf[ListBf[ListBf[Double]]]
+
 
 object HMMparamFactory {
 
@@ -30,18 +33,19 @@ class FBparameter(_alphas: ListBf[ListBf[Double]], _betas: ListBf[ListBf[Double]
   val seqN   = _alphas.size
   val stateN = _alphas.head.size
 
+  val logLike: Double = Utils.calcLogSumExp(alphas.last.toList)
+
   // gamma(seq)(state)
-  def convert2gamma: ListBf[ListBf[Double]] = {
-    val logLike = calcLogLike
+  def convert2gamma: Gamma = {
     Range(0, seqN).toList.foldLeft(ListBuf.empty[ListBuf[Double]]) { (gammaN, seqK) =>
       Range(0, stateN).toList.foldLeft(ListBuf.empty[Double]) { (gammaNk, stateK) =>
         val gammaLogProb = alpahs(seqK)(stateK) + betas(seqK)(stateK) - logLike
+        gammaNk += gammaLogProb
       }
     }
   }
   // xi(seq)(preState)(nextState)
-  def convert2xi(hmmParam: HMMparameter, sentence: ListBf[String]): ListBf[ListBf[ListBf[Double]]] = {
-    val logLike = calcLogLike
+  def convert2xi(hmmParam: HMMparameter, sentence: ListBf[String]): Xi = {
     Range(1, seqN).toList.foldLeft(ListBf.empty[ListBf[ListBf[Double]]]) { (xiN, seqK) =>
       Range(0, stateN).toList.foldLeft(ListBf.empty[ListBf[Double]]) { (xiNk, preStateK) =>
         Range(0, stateN).toList.foldLeft(ListBf.empty[Double]) { (xiNkK, nextStateK) =>
@@ -52,8 +56,5 @@ class FBparameter(_alphas: ListBf[ListBf[Double]], _betas: ListBf[ListBf[Double]
       }
     }
   }
-
-  def calcLogLike: Double = {
-    Utils.logSumExp(alphas.last.toList)
-  }
 }
+
