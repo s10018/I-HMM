@@ -3,26 +3,26 @@ package scala.ihmm
 import collection.mutable.{ListBuffer => ListBf}
 import collection.mutalbe.{Map => mMap}
 
-type Gamma = ListBf[ListBf[Double]]
-type Xi    = ListBf[ListBf[ListBf[Double]]]
+type Gamma = List[List[Double]]
+type Xi    = List[List[List[Double]]]
 
 
 object Optimizer {
 
   val Threshold = 0.001
 
-  def run(sentences: ListBf[ListBf[String]], vocabulary: List[String],
+  def run(sentences: List[List[String]], vocabulary: List[String],
     stateN: Int): HMMparameter = {
-    val param = new HMMparameter(ListBf(34.3), ListBf(ListBf(34.1)), ListBf(Map("hoge" -> 34.2)))
+    val param = new HMMparameter(List(34.3), List(List(34.1)), List(Map("hoge" -> 34.2)))
     return param
     def BaumWelch: HMMparameter = {
-      def calcLogLike(fbParams: ListBf[FBparameter]): Double = {
+      def calcLogLike(fbParams: List[FBparameter]): Double = {
         fbParams.foldLeft(0.0) { (accumLogLike, fbParam) =>
           accumLogLike + fbParam.logLike
         }
       }
-      def EStep(hmmParam: HMMparameter): ListBf[FBParameter] = {
-        sentences.foldLeft(ListBf.empty[FBParameter]) { (fbParams, sentence) =>
+      def EStep(hmmParam: HMMparameter): List[FBParameter] = {
+        sentences.map { sentence =>
           val alphas = ListBf.empty[List[Double]] += (Range(0, stateN).toList.map { stateK =>
             hmmParam.initProb(stateK) + hmmParam.emitProb(stateK)(sentence.head)
           })

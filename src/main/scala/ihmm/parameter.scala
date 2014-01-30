@@ -3,8 +3,8 @@ package scala.ihmm
 import scala.util.Random
 import collection.mutable.{ListBuffer => ListBf}
 
-type Gamma = ListBf[ListBf[Double]]
-type Xi    = ListBf[ListBf[ListBf[Double]]]
+type Gamma = List[List[Double]]
+type Xi    = List[List[List[Double]]]
 
 
 object HMMparamFactory {
@@ -30,7 +30,7 @@ object HMMparamFactory {
 }
 
 
-class HMMparameter(_initProb: List[Double], _transeProb: List[ListBf[Double]], _emitProb: List[Map[String, Double]]) {
+class HMMparameter(_initProb: List[Double], _transeProb: List[List[Double]], _emitProb: List[Map[String, Double]]) {
   val initProb   = _initProb    
   val transeProb = _transeProb  // transeProb(preState)(nextState)
   val emitProb   = _emitProb    // emitProb(state)(word)
@@ -38,7 +38,7 @@ class HMMparameter(_initProb: List[Double], _transeProb: List[ListBf[Double]], _
 
 
 // alphas(seq)(state), betas(seq)(state)
-class FBparameter(_alphas: ListBf[ListBf[Double]], _betas: ListBf[ListBf[Double]]) {
+class FBparameter(_alphas: List[List[Double]], _betas: List[List[Double]]) {
   require(_alphas.size == _betas.size)
   val alphas = _alphas
   val betas  = _betas
