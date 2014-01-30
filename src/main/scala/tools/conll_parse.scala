@@ -25,13 +25,13 @@ object ConllParse {
     nextLine(Source.fromFile(filename).getLines, List.empty[String], List.empty[String])
   }
 
-  def main(args: Array[String]): Unit = {
+  def parse(args: Map[String, String]): Unit = {
     try {
-      args.toList foreach {arg =>
+      args("file").split(' ') foreach {arg =>
         arg match {
           case filename: String 
               => parse_conll_file(filename) foreach (println)
-          case _ => error("please input file")
+          case _ => sys.error("please input file")
         }
       }
     } catch {

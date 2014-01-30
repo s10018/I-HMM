@@ -8,6 +8,8 @@ version := "0.0.1"
 
 //mainClass in Compile := Some("scala.ihmm.Main")
 
+scalacOptions ++= Seq( "-unchecked", "-deprecation" )
+
 libraryDependencies  ++= Seq(
   // other dependencies here
   // pick and choose:
