@@ -84,7 +84,7 @@ object Train {
 
   def examinVocabulary(sentences: List[List[String]]): List[String] = {
     sentences.foldLeft(ListBf.empty[String]) { (vocab, sentence) =>
-      vacab ++= sentence.distinct
+      vocab ++= sentence.distinct
     }
     .distinct.toList
   }
