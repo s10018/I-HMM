@@ -13,7 +13,7 @@ object HMMparamFactory {
 
   def randomInit(vocabulary: List[String], stateN: Int): HMMparameter = {
     val initProb   = randomLogProb(stateN).toArray
-    val transeProb = Range(0, stateN).toArray.map(stateK => randomLogProb(stateN))
+    val transeProb = Range(0, stateN).toArray.map(stateK => randomLogProb(stateN).toArray)
     val emitProb   = Range(0, stateN).toArray.map { stateK =>
       vocabulary.zip(randomLogProb(vocabulary.size)).toMap
     }

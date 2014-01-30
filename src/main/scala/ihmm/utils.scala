@@ -13,10 +13,18 @@ object Utils {
     maxLogProb + math.log(expSum)
   }
 
-  def logSum(logProbs: ListBf[Double]): Double = {
+  def logSumExp(logProbs: ListBf[Double]): Double = {
     val maxLogProb = logProbs.max
     val expSum = logProbs.foldLeft(0.0) { (expSum, logProb) =>
       expSum + math.exp(logProb - maxLogProb)
+    }
+    maxLogProb + math.log(expSum)
+  }
+
+  def logSumExp(logProbs: Array[Double]): Double = {
+    val maxLogProb = logProbs.max
+    val expSum = logProbs.foldLeft(0.0) { (expSum, logProb) =>
+      expSum + math.exp(logProb - mazLogProb)
     }
     maxLogProb + math.log(expSum)
   }
