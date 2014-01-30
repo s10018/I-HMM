@@ -1,6 +1,7 @@
 package scala.ihmm
 
 import scala.io.Source
+import java.io.PrintWriter
 import scala.annotation.tailrec
 import collection.mutable.{ListBuffer => ListBf}
 import collection.mutable.{Map => mMap}
@@ -39,18 +40,23 @@ object Train {
     val stateN: Int = opt("stateN").toInt
     val cutOff: Int = opt("cutOff").toInt
 
-    println(testPath);println(dumpPath);println(layerN);println(stateN);println(cutOff)
+    //println(testPath);println(dumpPath);println(layerN);println(stateN);println(cutOff)
 
     val sentences = readAndSetData(testPath, cutOff)
     val vocabulary = examinVocabulary(sentences)
-    sentences.foreach { sent =>
-      sent.foreach { word =>
-        print(word + " ")
-      }
-      print("\n")
-    }
-    vocabulary.foreach(println)
-    println(Optimizer.run(sentences, vocabulary, stateN))
+    println("Number of Sentence:   " + sentences.size.toString)
+    println("Number of Vocabulary: " + vocabulary.size.toString)
+
+    val hmmParam = Optimizer.run(sentences, vocabulary, stateN)
+    val fileP    = new PrintWriter(dumpPath)
+    fileP.println(layerN.toString + " " + stateN.toString)
+    fileP.println(vocabulary.mkString(" "))
+    hmmParam.printTranseProb(0, fileP)
+    hmmParam.printEmitProb(0, fileP)
+    hmmParam.printInitProb(0, fileP)
+    fileP.flush
+    fileP.close
+
   }
 
   def readAndSetData(testPath: String, cutOff: Int): List[List[String]] = {
@@ -58,11 +64,7 @@ object Train {
       def split2words(sentence: String): List[String] = {
         sentence.split(" ").toList
       }
-      val sentences = ListBf.empty[List[String]]
-      for(line <- Source.fromFile(testPath).getLines()) {
-        sentences += split2words(line)
-      }
-      return sentences.toList
+      Source.fromFile(testPath).getLines.toList.map( line => split2words(line) )
     }
     def extractLowFreqWord(sentences: List[List[String]], cutOff: Int): List[String] = {
       def countFreq(sentences: List[List[String]]): Map[String, Int] = {
@@ -72,7 +74,7 @@ object Train {
           }
         }.toMap
       }
-      countFreq(sentences).filter(wdCount => wdCount._2 < cutOff).keys.toList
+      countFreq(sentences).filter(wdCount => wdCount._2 <= cutOff).keys.toList
     }
     val sentences   = convert2sentences(testPath)
     val lowFreqWord = extractLowFreqWord(sentences, cutOff)
@@ -88,4 +90,9 @@ object Train {
     }
     .distinct.toList
   }
+
+  /*def dumpDate(dumpPath: String, hmmParams: list[HMMparameter]): Unit = {
+    val dumpF = new PrintWriter(dumpPath)*/
+
+    
 }
