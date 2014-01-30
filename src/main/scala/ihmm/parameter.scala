@@ -1,5 +1,6 @@
 package scala.ihmm
 
+import scala.util.Random
 import collection.mutable.{ListBuffer => ListBf}
 
 type Gamma = ListBf[ListBf[Double]]
@@ -8,20 +9,31 @@ type Xi    = ListBf[ListBf[ListBf[Double]]]
 
 object HMMparamFactory {
 
+  val r_gen = new Random
+
   def randomInit(vocabulary: List[String], stateN: Int): HMMparameter = {
-    val initProb:   ListBf[Double]
-    val transeProb: ListBf[ListBf[Double]]
-    val emitProb:   ListBf[Map[String, Double]]
+    val initProb   = randomLogProb(stateN)
+    val transeProb = Range(0, stateN).toList.map(stateK => randomLogProb(stateN))
+    val emitProb   = Range(0, stateN).toList.map { stateK =>
+      vocabulary.zip(randomLogProb(vocabulary.size)).toMap
+    }
 
     return new HMMparameter(initProb, transeProb, emitProb)
+  }
+  def randomLogProb(sizeN: Int): List[Double] = {
+    val probMass = Range(0, sizeN).toList.map(i => r_gen.nextDouble)
+    val logNmlz  = math.log(probMass.sum)
+    probMass.map { pMass =>
+      math.log(pMass) - logNmlz
+    }
   }
 }
 
 
-class HMMparameter(_initProb: ListBf[Double], _transeProb: ListBf[ListBf[Double]], _emitProb: ListBf[Map[String, Double]]) {
+class HMMparameter(_initProb: List[Double], _transeProb: List[ListBf[Double]], _emitProb: List[Map[String, Double]]) {
   val initProb   = _initProb    
   val transeProb = _transeProb  // transeProb(preState)(nextState)
-  val emitProb   = _emitProb
+  val emitProb   = _emitProb    // emitProb(state)(word)
 }
 
 

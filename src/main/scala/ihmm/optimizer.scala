@@ -1,6 +1,7 @@
 package scala.ihmm
 
 import collection.mutable.{ListBuffer => ListBf}
+import collection.mutalbe.{Map => mMap}
 
 type Gamma = ListBf[ListBf[Double]]
 type Xi    = ListBf[ListBf[ListBf[Double]]]
@@ -57,7 +58,7 @@ object Optimizer {
           Range(0, stateN).toList.map { preStateK =>
             val denom = Utils.logSumExp(xis.map { xi =>
               Utils.logSumExp(xi.map { xiN =>
-                Util.logSumExp(xiN(preStateK))
+                Utils.logSumExp(xiN(preStateK))
               })
             })
             Range(0, stateN).toList.map { nextStateK =>
@@ -68,7 +69,17 @@ object Optimizer {
           }
         }
         def updateEmitProb(gammas: ListBf[Gamma]): ListBf[Map[String, Double]] = {
-
+          Range(0, stateN).toList.map { stateK =>
+            val denom = Utils.logSumExp(gammas.map { gamma =>
+              Utils.logSumExp(gamma.map(gammaN => gammaN(stateK)))
+            })
+            vocabulary.foldLeft(mMap.empty[String, Double]) { (emitMap, word) =>
+              val emitLogProb = Utils.logSumExp(gammas.zip(sentences).foldLeft(Listbuf.empty[Double]) { (logProbs, (gamma, sentence)) =>
+                logProbs ++= gamma.zip(sentence).filter((gammaN, _word) => _word == word).map { (gammaN, _word) => gammaN(stateK) }
+              }) - denom
+              emitMap + (word -> emitLogProb)
+            }
+          }
         }
         val gammas = fbParams.map { fbParam => fbParam.convert2gamma }
         val xis    = fbParams.zip(sentences).map { (fbParam, sentence) => fbParam.convert2xi(hmmParam, sentence) }
