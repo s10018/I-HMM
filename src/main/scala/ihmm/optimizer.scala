@@ -85,16 +85,12 @@ object Optimizer {
         val gammas = fbParams.map { fbParam => fbParam.convert2gamma }
         val xis    = fbParams.zip(sentences).map { fbParamSent => fbParamSent._1.convert2xi(hmmParam, fbParamSent._2) }
 
-        /*val _initP = updateInitProb(gammas)
-        val _transeP = updateTranseProb(xis)
-        val _emitP = updateEmitProb(gammas)
-        new HMMparameter(_initP, _transeP, _emitP)*/
         new HMMparameter(updateInitProb(gammas), updateTranseProb(xis), updateEmitProb(gammas))
       }
       def _BaumWelch(oldHMMparam: HMMparameter, oldLogLike: Double): HMMparameter = {
         val newFBparams  = EStep(oldHMMparam)
-        val newHMMparam = MStep(newFBparams, oldHMMparam)
-        val newLogLike  = calcLogLike(newFBparams)
+        val newHMMparam  = MStep(newFBparams, oldHMMparam)
+        val newLogLike   = calcLogLike(newFBparams)
 
         if ((newLogLike - oldLogLike).abs < Threshold)
           newHMMparam

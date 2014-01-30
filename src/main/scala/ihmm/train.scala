@@ -40,25 +40,33 @@ object Train {
     val stateN: Int = opt("stateN").toInt
     val cutOff: Int = opt("cutOff").toInt
 
-    //println(testPath);println(dumpPath);println(layerN);println(stateN);println(cutOff)
 
-    val sentences = readAndSetData(testPath, cutOff)
+    val sentences  = readAndSetData(testPath, cutOff)
     val vocabulary = examinVocabulary(sentences)
     println("Number of Sentence: " + sentences.size.toString)
     println("Number of Token: " + sentences.foldLeft(0)( (total, sent) => total + sent.size ).toString)
     println("Number of Vocabulary: " + vocabulary.size.toString)
 
 
-    val hmmParam = Optimizer.run(sentences, vocabulary, stateN)
-    val fileP    = new PrintWriter(dumpPath)
+    val hmmParams = Range(0, layerN).par.map { _ =>
+      Optimizer.run(sentences, vocabulary, stateN)
+    }.zipWithIndex
+    val fileP = new PrintWriter(dumpPath)
+
     fileP.println(layerN.toString + " " + stateN.toString)
     fileP.println(vocabulary.mkString(" "))
-    hmmParam.printTranseProb(0, fileP)
-    hmmParam.printEmitProb(0, fileP)
-    hmmParam.printInitProb(0, fileP)
+    hmmParams.foreach { case (hmmParam, layerK) =>
+      hmmParam.printTranseProb(layerK, fileP)
+    }
+    hmmParams.foreach { case (hmmParam, layerK) =>
+      hmmParam.printEmitProb(layerK, fileP)
+    }
+    hmmParams.foreach { case (hmmParam, layerK) =>
+      hmmParam.printInitProb(layerK, fileP)
+    }
+
     fileP.flush
     fileP.close
-
   }
 
   def readAndSetData(testPath: String, cutOff: Int): List[List[String]] = {
