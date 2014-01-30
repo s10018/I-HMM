@@ -21,7 +21,7 @@ object HMMparamFactory {
     return new HMMparameter(initProb, transeProb, emitProb)
   }
   def randomLogProb(sizeN: Int): List[Double] = {
-    val probMass = Range(0, sizeN).toList.map(i => r_gen.nextDouble)
+    val probMass = Range(0, sizeN).toList.map(i => r_gen.nextDouble + 0.5)
     val logNmlz  = math.log(probMass.sum)
     probMass.map { pMass =>
       math.log(pMass) - logNmlz

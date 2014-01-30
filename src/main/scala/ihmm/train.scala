@@ -44,8 +44,10 @@ object Train {
 
     val sentences = readAndSetData(testPath, cutOff)
     val vocabulary = examinVocabulary(sentences)
-    println("Number of Sentence:   " + sentences.size.toString)
+    println("Number of Sentence: " + sentences.size.toString)
+    println("Number of Token: " + sentences.foldLeft(0)( (total, sent) => total + sent.size ).toString)
     println("Number of Vocabulary: " + vocabulary.size.toString)
+
 
     val hmmParam = Optimizer.run(sentences, vocabulary, stateN)
     val fileP    = new PrintWriter(dumpPath)
@@ -90,9 +92,4 @@ object Train {
     }
     .distinct.toList
   }
-
-  /*def dumpDate(dumpPath: String, hmmParams: list[HMMparameter]): Unit = {
-    val dumpF = new PrintWriter(dumpPath)*/
-
-    
 }
