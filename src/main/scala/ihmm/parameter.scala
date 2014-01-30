@@ -3,8 +3,8 @@ package scala.ihmm
 import scala.util.Random
 import collection.mutable.{ListBuffer => ListBf}
 
-type Gamma = List[List[Double]]
-type Xi    = List[List[List[Double]]]
+type Gamma = List[Array[Double]]
+type Xi    = List[Array[Array[Double]]]
 
 
 object HMMparamFactory {
@@ -12,9 +12,9 @@ object HMMparamFactory {
   val r_gen = new Random
 
   def randomInit(vocabulary: List[String], stateN: Int): HMMparameter = {
-    val initProb   = randomLogProb(stateN)
-    val transeProb = Range(0, stateN).toList.map(stateK => randomLogProb(stateN))
-    val emitProb   = Range(0, stateN).toList.map { stateK =>
+    val initProb   = randomLogProb(stateN).toArray
+    val transeProb = Range(0, stateN).toArray.map(stateK => randomLogProb(stateN))
+    val emitProb   = Range(0, stateN).toArray.map { stateK =>
       vocabulary.zip(randomLogProb(vocabulary.size)).toMap
     }
 
@@ -30,7 +30,7 @@ object HMMparamFactory {
 }
 
 
-class HMMparameter(_initProb: List[Double], _transeProb: List[List[Double]], _emitProb: List[Map[String, Double]]) {
+class HMMparameter(_initProb: Array[Double], _transeProb: Array[Array[Double]], _emitProb: Array[Map[String, Double]]) {
   val initProb   = _initProb    
   val transeProb = _transeProb  // transeProb(preState)(nextState)
   val emitProb   = _emitProb    // emitProb(state)(word)
@@ -38,7 +38,7 @@ class HMMparameter(_initProb: List[Double], _transeProb: List[List[Double]], _em
 
 
 // alphas(seq)(state), betas(seq)(state)
-class FBparameter(_alphas: List[List[Double]], _betas: List[List[Double]]) {
+class FBparameter(_alphas: List[Array[Double]], _betas: List[Array[Double]]) {
   require(_alphas.size == _betas.size)
   val alphas = _alphas
   val betas  = _betas
@@ -49,24 +49,21 @@ class FBparameter(_alphas: List[List[Double]], _betas: List[List[Double]]) {
 
   // gamma(seq)(state)
   def convert2gamma: Gamma = {
-    Range(0, seqN).toList.foldLeft(ListBuf.empty[ListBuf[Double]]) { (gammaN, seqK) =>
-      Range(0, stateN).toList.foldLeft(ListBuf.empty[Double]) { (gammaNk, stateK) =>
-        val gammaLogProb = alpahs(seqK)(stateK) + betas(seqK)(stateK) - logLike
-        gammaNk += gammaLogProb
+    alphas.zip(betas).map { (alpha, beta) =>
+      Range(0, stateN).toArray.map { stateK =>
+        gammaLogProb = alpha(stateK) + beta(stateK) - logLike
       }
     }
   }
   // xi(seq)(preState)(nextState)
-  def convert2xi(hmmParam: HMMparameter, sentence: ListBf[String]): Xi = {
-    Range(1, seqN).toList.foldLeft(ListBf.empty[ListBf[ListBf[Double]]]) { (xiN, seqK) =>
-      Range(0, stateN).toList.foldLeft(ListBf.empty[ListBf[Double]]) { (xiNk, preStateK) =>
-        Range(0, stateN).toList.foldLeft(ListBf.empty[Double]) { (xiNkK, nextStateK) =>
-          val xiLogProb = alphas(seqK - 1)(preStateK) + betas(seqK)(nextStateK)
-          + hmmParam.transe(preStateK)(nextStateK) + hmmParam.emitProb(seqK)(sentence(seqK)) - logLike
-          xiNkK += xiProb
+  def convert2xi(hmmParam: HMMparameter, sentence: List[String]): Xi = {
+    (betas.tail.zip(alpha.init)).zip(sentence.tail).map { ((betaN, alphaPreN), wordN) =>
+      Range(0, stateN).toArray.map { preStateK =>
+        Range(0, StateN).toArray.map { nextStateK =>
+          alphaPreN(preStateK) + hmmParam.emitProb(nextStateK)(wordN)
+          + hmmParam.traneProb(preStateK)(nextStateK) + betaN(nextStateK) - logLike
         }
       }
     }
   }
 }
-
