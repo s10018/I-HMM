@@ -8,7 +8,7 @@ import collection.mutable.{Map => mMap}
 
 object Train {
   val usage = "usage: jave -jar PL-MRF.jar train -test testfile -layer layer_n -state state_n -c cut-off -dump dumpfile"
-  val unknow = "##UNKOWN##"
+  val unknow = "##UNKNOWN##"
 
   def parseTrain(opt: Map[String, String], rest :List[String]): Map[String, String] = {
     try {
