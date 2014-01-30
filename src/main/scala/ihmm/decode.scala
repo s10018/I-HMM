@@ -4,21 +4,14 @@ import scala.io.Source
 import breeze.stats.distributions
 
 // 特徴
-class Features(w:String, latent_size:Int) {
-  val latent_status = Array.fill(latent_size)(0);
-  val word = w
+case class Features(word:String, latent_status:IndexedSeq[Int]) {
   override def toString(): String = word + "\t" + latent_status.mkString(" ")
 }
 
 // パラメータ
 case class Param(param: Map[String, Int]) {
   def get(key: String): Int = param(key)
-  def getRange(key: String): Range = {
-    key match {
-      case n:String => Range(0, param(n))
-      case _ => Range(0, 10) 
-    }
-  }
+  def getRange(key: String): Range = Range(0, param(key))
 }
 
 // M 個分の確率
@@ -31,19 +24,15 @@ case class EmitProb(prob: Map[Int, Map[String, Double]]) {
 case class TransProb(prob: Map[Int, Map[Int, Double]]) {
   def get(state1: Int, state2: Int): Double = prob(state1).apply(state2)
 }
+case class State(pos:Int, state:Int)
 case class Model(layer: Int, init: InitProb, emit: EmitProb, trans: TransProb)
+
 
 object Decode {
 
-  implicit def strEmit(s: Array[String]) =
-    new { def toEmit() = Array(s(0), s(1).toInt, s(2).toInt, s(3), s(4).toDouble) }
-
-  implicit def strTrans(s: Array[String]) =
-    new { def toTrans() = Array(s(0), s(1).toInt, s(2).toInt, s(3).toInt, s(4).toDouble) }
-
   val UNK = "##UNKNOWN##"
 
-  def output(result : Iterator[Array[Features]]) {
+  def output(result : List[IndexedSeq[Features]]) {
     result foreach { features => println(features.mkString("\n") + "\n") }
   }
 
@@ -62,70 +51,94 @@ object Decode {
     }
   }
 
-  def decoding(tokens: Array[String], param: Param, model: Model): Array[Features] = {
+  def decoding(tokens: Array[String], param: Param, models: Map[Int, Model]): IndexedSeq[Features] = {
 
-    // Viterbi algorithm
-    var features = tokens.map{ token => new Features(token, 4) }
-
-    for (m <- param.getRange("M")) {
+    val seqfs = for (m <- param.getRange("M")) yield {
+      val model = models(m)
 
       // best_score expresses position i and state k's best score
       var best_score = collection.mutable.Map[Int, Map[Int, Double]]()
-      var best_path = collection.mutable.Map[Int, Int]()
+      var best_path = collection.mutable.Map[State, State]()
 
-      best_score(-1) = Map[Int, Double]()
+      best_score(0) = Map[Int, Double]()
+
       // init
-      for (k <- param.getRange("K")) 
-        best_score(-1) += k -> model.init.get(k)
-
+      for (k <- Range(0, param.get("K"))) {
+        best_score(0) += k -> (- model.init.get(k) - model.emit.get(k, tokens(0)))
+        best_path += State(0, k) -> State(-1, k)
+      }
       // calculating best_score
-      for ((token, i) <- tokens.zipWithIndex) { // i is position
-        for (k <- param.getRange("K")) { 
+      for (i <- Range(1, tokens.size)) { // i is position
+        best_score(i) = Map[Int, Double]()
+        for (k <- param.getRange("K")) {
           var tmp_result = Map[Int, Double]()
           for (l <- param.getRange("K")) {
-            tmp_result += l -> (best_score(i-1)(k) + model.trans.get(l, k))
+            tmp_result += l -> (best_score(i-1)(k) - model.trans.get(l, k))
           }
-          val best = tmp_result.maxBy(_._2)
-          best_path += best._1 -> k
-          best_score ++ Map(i -> Map(k -> (model.emit.get(k, token) + best._2))) // i th token's best score
+          val best = tmp_result.minBy(_._2)
+          best_path += State(i, k) -> State(i-1, best._1) // now -> prev path
+          best_score(i) += k -> (- model.emit.get(k, tokens(i-1)) + best._2) // i th token's best score
         }
       }
-      // val path = best_path(param.get("K") - 1).minBy()
-      // // detect best_path
-      // def detect(rest: Map[Int, Int], features: List[Int]) {
-      //   rest match {
-      //     case Nil => features
-      //     case head :: tail => detect(tail, features)
-      //   }
-      // }
-      // detect()
-      // update Feature
+
+      val pair = best_path filter { 
+        case (n, m) => (n.pos == tokens.size - 1)
+      } minBy {
+        case (n, m) => best_score(n.pos)(n.state) 
+      }
+
+      def detectPath(pair: State, path: List[Int]): List[Int] = {
+        pair match {
+          case State(-1, m) => m :: path
+          case State(n, m) => detectPath(best_path(State(n, m)), m :: path)
+        }
+      }
+      detectPath(pair._2, List[Int]())
     }
 
-    tokens.map{ token => new Features(token, 4) }
+    (0 until tokens.size) map {
+      i => Features(tokens(i), (0 until seqfs.size) map {j => seqfs(j)(i) })
+    }
   }
 
   def LoadModel(param: Param, probs: List[Array[String]]): Map[Int, Model] = {
-    // ここ書く
     param.getRange("M") map {m =>
-
-      val init = InitProb(probs filter {
-        p => p.head == "I" && p(1) == m.toString
-      } map {p => p(2).toInt -> p(3).toDouble } toMap)
-
-      // val emit = probs filter {
-      //   p => p.head == "E" && p(1) == m.toString
-      // } map {p => p(2) -> Map(p(3) -> p(4))}
-
-      val trans = TransProb(Map[Int, Map[Int, Double]]())
-
-      val emit = EmitProb(Map[Int, Map[String, Double]]())
-
-      m -> Model(m, init, emit, trans)
+      def parse(init:Map[Int, Double], emit:Map[Int, Map[String, Double]],
+        trans:Map[Int, Map[Int, Double]], rest: List[Array[String]]): Model = {
+        rest match {
+          case Nil => Model(m, InitProb(init), EmitProb(emit), TransProb(trans))
+          case _ => {
+            val head = rest.head
+            head(0) match {
+              case "I"
+                  => parse(init ++ Map(head(2).toInt -> head(3).toDouble), emit, trans, rest.tail)
+              case "E" => {
+                val map = emit.get(head(2).toInt) match {
+                  case Some(n) => Map(head(2).toInt -> (n ++ Map(head(3) -> head(4).toDouble)))
+                  case None => Map(head(2).toInt -> Map(head(3) -> head(4).toDouble))
+                }
+                parse(init, emit ++ map, trans, rest.tail)
+              }
+              case "T" => {
+                val map = trans.get(head(2).toInt) match {
+                  case Some(n) => Map(head(2).toInt -> (n ++ Map(head(3).toInt -> head(4).toDouble)))
+                  case None => Map(head(2).toInt -> Map(head(3).toInt -> head(4).toDouble))
+                }
+                parse(init, emit, trans ++ map, rest.tail)
+              }
+            }
+          }
+        }
+      }
+      val i = Map[Int, Double]()
+      val t = Map[Int, Map[Int, Double]]()
+      val e = Map[Int, Map[String, Double]]()
+      m -> parse(i, e, t, probs filter {line => line(1) == m.toString} )
     } toMap
   }
 
-  def makeParam(head: Array[String]): Param = Param(Map("M" -> head(0).toInt, "K" -> head(1).toInt))
+  def makeParam(head: Array[String]): Param
+    = Param(Map("M" -> head(0).toInt, "K" -> head(1).toInt))
 
   def LoadFile(filename: String): List[Array[String]] 
     = Source.fromFile(filename).getLines().map(_.split(' ')).toList
@@ -141,13 +154,13 @@ object Decode {
       case None => ""
     }
 
-    val document = Source.fromFile(filename).getLines()
+    val document = LoadFile(filename)
     val probs = LoadFile(probfilename)
     val param = makeParam(probs.head)
-    val model = LoadModel(param, probs.tail)
+    val models = LoadModel(param, probs.tail)
 
     output(document.map {
-      sentence => decoding(sentence.split(' '), param, model(0))
+      sentence => decoding(sentence, param, models)
     })
 
   }

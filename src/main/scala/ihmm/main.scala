@@ -1,8 +1,10 @@
 package scala.ihmm
 
+import scala.tools._
+
 object Main {
 
-  val usage = "usage: java -jar PL-MRF.jar [train|decode] input_file"
+  val usage = "usage: java -jar PL-MRF.jar [train|decode|conll] input_file"
 
   def ArgumentParse(map: Map[String, String], args: List[String]): Map[String, String] = {
     def parse (map : Map[String, String], args: List[String]): Map[String, String] = {
@@ -12,6 +14,8 @@ object Main {
             => Train.parseTrain(map ++ Map("mode" -> "train"), rest)
         case "decode" :: rest
             => Decode.parseDecode(map ++ Map("mode" -> "decode"), rest)
+        case "conll" :: rest
+            => Map("mode" -> "conll", "file" -> rest.mkString(" "))
         case _ 
             => Map("mode" -> "")
       }
@@ -20,12 +24,13 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-    try {
+   try {
       val opt = ArgumentParse(Map(), args.toList)
       opt.get("mode") match {
         case Some("train") => Train.train(opt)
         case Some("decode") => Decode.decode(opt)
-        case _ => error("Illegal Argument!!")
+        case Some("conll") => ConllParse.parse(opt)
+        case _ => sys.error("Illegal Argument!!")
       }
     } catch {
       case e: RuntimeException => println(usage)
