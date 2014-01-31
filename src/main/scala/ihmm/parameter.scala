@@ -6,19 +6,17 @@ import collection.mutable.{ListBuffer => ListBf}
 
 
 
-
 object HMMparamFactory {
 
   val r_gen = new Random
 
-  def randomInit(vocabulary: List[String], stateN: Int): HMMparameter = {
+  def randomInit2(vocabulary: List[String], stateN: Int): HMMparameter = {
     val initProb   = randomLogProb(stateN).toArray
-    val transeProb = Range(0, stateN).toArray.map(stateK => randomLogProb(stateN).toArray)
+    val transeProb = Range(0, stateN).toArray.map( stateK => randomLogProb(stateN).toArray )
     val emitProb   = Range(0, stateN).toArray.map { stateK =>
       vocabulary.zip(randomLogProb(vocabulary.size)).toMap
     }
-
-    return new HMMparameter(initProb, transeProb, emitProb)
+    new HMMparameter(initProb, transeProb, emitProb)
   }
   def randomLogProb(sizeN: Int): List[Double] = {
     val probMass = Range(0, sizeN).toList.map(i => r_gen.nextDouble + 0.5)
@@ -26,6 +24,14 @@ object HMMparamFactory {
     probMass.map { pMass =>
       math.log(pMass) - logNmlz
     }
+  }
+  def randomInit(vocabulary: List[String], stateN: Int): HMMparameter = {
+    val initProb   = DirRand.logRandom(stateN, 2.0).toArray
+    val transeProb = Range(0, stateN).toArray.map( stateK => DirRand.logRandom(stateN, 2.0).toArray )
+    val emitProb   = Range(0, stateN).toArray.map { stateK =>
+      vocabulary.zip(DirRand.logRandom(vocabulary.size, 2.0)).toMap
+    }
+    new HMMparameter(initProb, transeProb, emitProb)
   }
 }
 
@@ -39,6 +45,7 @@ class HMMparameter(_initProb: Array[Double], _transeProb: Array[Array[Double]], 
     initProb.zipWithIndex.foreach { probState =>
       fileP.println("I" + " "  + layerK.toString + " " + probState._2.toString + " " + probState._1.toString)
     }
+    //println("I: " + Utils.logSumExp(initProb).toString)
   }
   def printTranseProb(layerK: Int, fileP: PrintWriter): Unit = {
     transeProb.zipWithIndex.foreach { probsPreState =>
@@ -47,6 +54,7 @@ class HMMparameter(_initProb: Array[Double], _transeProb: Array[Array[Double]], 
       probs.zipWithIndex.foreach { probState =>
         fileP.println("T" + " " + layerK.toString + " " + preState.toString + " " + probState._2.toString + " " + probState._1.toString)
       }
+      //println("E: " + Utils.logSumExp(probs).toString)
     }
   }
   def printEmitProb(layerK: Int, fileP: PrintWriter): Unit = {
@@ -56,6 +64,7 @@ class HMMparameter(_initProb: Array[Double], _transeProb: Array[Array[Double]], 
       probPairs.foreach { probPair =>
         fileP.println("E" + " " + layerK.toString + " " + state.toString + " " + probPair._1 + " " + probPair._2)
       }
+      //println("E: " + Utils.logSumExp(probPairs.map { pair => pair._2 }).toString)
     }
   }
 }

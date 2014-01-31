@@ -50,21 +50,21 @@ object Train {
 
     val hmmParams = Range(0, layerN).par.map { _ =>
       Optimizer.run(sentences, vocabulary, stateN)
-    }.zipWithIndex
+    }.seq
     val fileP = new PrintWriter(dumpPath)
 
     fileP.println(layerN.toString + " " + stateN.toString)
     fileP.println(vocabulary.mkString(" "))
-    hmmParams.foreach { case (hmmParam, layerK) =>
+
+    hmmParams.zipWithIndex.foreach { case (hmmParam, layerK) =>
       hmmParam.printTranseProb(layerK, fileP)
     }
-    hmmParams.foreach { case (hmmParam, layerK) =>
+    hmmParams.zipWithIndex.foreach { case (hmmParam, layerK) =>
       hmmParam.printEmitProb(layerK, fileP)
     }
-    hmmParams.foreach { case (hmmParam, layerK) =>
+    hmmParams.zipWithIndex.foreach { case (hmmParam, layerK) =>
       hmmParam.printInitProb(layerK, fileP)
     }
-
     fileP.flush
     fileP.close
   }

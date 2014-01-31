@@ -10,7 +10,7 @@ object Optimizer {
   type Gamma = List[Array[Double]]
   type Xi    = List[Array[Array[Double]]]
 
-  val Threshold = 0.001
+  val Threshold = 0.0001
 
   def run(sentences: List[List[String]], vocabulary: List[String], stateN: Int): HMMparameter = {
     def BaumWelch: HMMparameter = {
