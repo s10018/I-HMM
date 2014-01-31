@@ -8,7 +8,7 @@ import collection.mutable.{Map => mMap}
 
 object Train {
   val usage = "usage: jave -jar PL-MRF.jar train -test testfile -layer layer_n -state state_n -c cut-off -dump dumpfile"
-  val unknow = "##UNKNOWN##"
+  val UNKNOWN = "##UNKNOWN##"
 
   def parseTrain(opt: Map[String, String], rest :List[String]): Map[String, String] = {
     try {
@@ -40,9 +40,8 @@ object Train {
     val stateN: Int = opt("stateN").toInt
     val cutOff: Int = opt("cutOff").toInt
 
+    val (sentences, vocabulary) = readAndSetData(testPath, cutOff)
 
-    val sentences  = readAndSetData(testPath, cutOff)
-    val vocabulary = examinVocabulary(sentences)
     println("Number of Sentence: " + sentences.size.toString)
     println("Number of Token: " + sentences.foldLeft(0)( (total, sent) => total + sent.size ).toString)
     println("Number of Vocabulary: " + vocabulary.size.toString)
@@ -69,35 +68,50 @@ object Train {
     fileP.close
   }
 
-  def readAndSetData(testPath: String, cutOff: Int): List[List[String]] = {
-    def convert2sentences(testPath: String): List[List[String]] = {
+  def readAndSetData(testPath: String, cutOff: Int): (List[List[String]], List[String]) = {
+    def convert2sentences(testPath: String): ListBf[List[String]] = {
       def split2words(sentence: String): List[String] = {
         sentence.split(" ").toList
       }
-      Source.fromFile(testPath).getLines.toList.map( line => split2words(line) )
-    }
-    def extractLowFreqWord(sentences: List[List[String]], cutOff: Int): List[String] = {
-      def countFreq(sentences: List[List[String]]): Map[String, Int] = {
-        sentences.foldLeft(mMap.empty[String, Int]) { (mapC, sentence) =>
-          sentence.foldLeft(mapC) { (mapC_, word) =>
-            mapC_ + (word -> (mapC_.getOrElse(word, 0) + 1))
-          }
-        }.toMap
+      val s = Source.fromFile(testPath)
+      val sentences = ListBf.empty[List[String]]
+
+      for (line <- s.getLines) {
+        sentences += split2words(line)
       }
-      countFreq(sentences).filter(wdCount => wdCount._2 <= cutOff).keys.toList
+      s.close
+      sentences
+    }
+    def countFreq(sentences: ListBf[List[String]]): mMap[String, Int] = {
+      sentences.foldLeft(mMap.empty[String, Int]) { (mapC, sentence) =>
+        sentence.foldLeft(mapC) { (_mapC, word) =>
+          _mapC + (word -> (_mapC.getOrElse(word, 0) + 1))
+        }
+      }
+    }
+    def extractLowFreqWord(wordFreq: mMap[String, Int]): mMap[String, Int] = {
+      wordFreq.filter(wdCount => wdCount._2 <= cutOff)
+    }
+    def excludeLowFreqWord(sentences: ListBf[List[String]], lowFreqWord: mMap[String, Int]): List[List[String]] = {
+      sentences.map { sentence =>
+        sentence.map { word => if (lowFreqWord.contains(word)) UNKNOWN else word }
+      }.toList
+    }
+    def examinVocabulary(wordFreq: mMap[String, Int], lowFreqWord: mMap[String, Int]): List[String] = {
+      val preVocabulary = wordFreq.filter { wdCount => wdCount._2 > cutOff }
+      if (lowFreqWord.size == 0) {
+        preVocabulary.keys.toList
+      } else {
+        UNKNOWN :: (preVocabulary.keys.toList)
+      }
     }
     val sentences   = convert2sentences(testPath)
-    val lowFreqWord = extractLowFreqWord(sentences, cutOff)
+    val wordFreq    = countFreq(sentences)
+    val lowFreqWord = extractLowFreqWord(wordFreq)
 
-    sentences.map { sentence =>
-      sentence.map( word => if (lowFreqWord.contains(word)) unknow else word )
-    }
-  }
+    val sentences2  = excludeLowFreqWord(sentences, lowFreqWord)
+    val vocabulary  = examinVocabulary(wordFreq, lowFreqWord)
 
-  def examinVocabulary(sentences: List[List[String]]): List[String] = {
-    sentences.foldLeft(ListBf.empty[String]) { (vocab, sentence) =>
-      vocab ++= sentence.distinct
-    }
-    .distinct.toList
+    (sentences2, vocabulary)
   }
 }
