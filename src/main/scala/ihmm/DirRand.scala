@@ -15,5 +15,7 @@ object DirRand {
     }
     new Dirichlet(vec).sample(1, rand).get(0).arrayCopy().toList
   }
-
+  def logRandom(size: Int, alpha: Double): List[Double] = {
+    random(size, alpha).map( math.log(_) )
+  }
 }
