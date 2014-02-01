@@ -81,15 +81,15 @@ object Decode {
           }
           val best = tmp_result.minBy(_._2)
           best_path += State(i, k) -> State(i-1, best._1) // now -> prev path
-          if (vocab.contains(tokens(i-1)))
-            best_score(i) += k -> (- model.emit.get(k, tokens(i-1)) + best._2) // i th token's best score
+          if (vocab.contains(tokens(i)))
+            best_score(i) += k -> (- model.emit.get(k, tokens(i)) + best._2) // i th token's best score
           else
             best_score(i) += k -> (- model.emit.get(k, UNK) + best._2) // i th token's best score
         }
       }
 
-      val pair = best_path filter { 
-        case (n, m) => (n.pos == tokens.size - 1)
+      val pair = best_path filter {case (n, m) =>
+        (n.pos == tokens.size - 1)
       } minBy {
         case (n, m) => best_score(n.pos)(n.state) 
       }
@@ -110,8 +110,8 @@ object Decode {
 
   def LoadModel(param: Param, probs: List[Array[String]]): Map[Int, Model] = {
     param.getRange("M") map {m =>
-      def parse(init:Map[Int, Double], emit:Map[Int, Map[String, Double]],
-        trans:Map[Int, Map[Int, Double]], rest: List[Array[String]]): Model = {
+      def parse(init: Map[Int, Double], emit:Map[Int, Map[String, Double]],
+        trans: Map[Int, Map[Int, Double]], rest: List[Array[String]]): Model = {
         rest match {
           case Nil => Model(m, InitProb(init), EmitProb(emit), TransProb(trans))
           case _ => {
