@@ -33,8 +33,8 @@ object Optimizer {
     val emitProbMass:   Array[mMap[String, Double]] = Array.tabulate(stateN) { _ =>
       vocabulary.iterator.foldLeft(mMap.empty[String, Double]) { (_map, word) => _map + (word -> Double.NegativeInfinity) }
     }
-    val sentN: Int = sentences.length
-    var idx:   Int = 0
+    val sentN: Int = sentences.size
+    var idx: Int   = 0
     while (idx < sentN) {
       val sentence = sentences(idx)
       // E Step
@@ -68,6 +68,7 @@ object Optimizer {
       }
       idx += 1
     }
+
     val initProbDenom = Utils.logSumExp(initProbMass)
     Range(0, stateN).iterator.foreach { stateK => initProbMass(stateK) -= initProbDenom }
     val transeProbDenoms = Range(0, stateN).iterator.map { stateK => Utils.logSumExp(transeProbMass(stateK)) }
@@ -90,6 +91,7 @@ object Optimizer {
     else
       _BaumWelch(newHMMparam, newLogLike, sentences, vocabulary, stateN)
   }
+
   def calcAlpha(sentence: Array[String], hmmParam: HMMparameter, stateN: Int): Array[Array[Double]] = {
     val alphas = ListBf.empty[Array[Double]] += (Range(0, stateN).toArray.map { stateK =>
       hmmParam.initProb(stateK) + hmmParam.emitProb(stateK)(sentence.head)

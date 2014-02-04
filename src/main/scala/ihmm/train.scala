@@ -45,9 +45,9 @@ object Train {
 
     val (sentences, vocabulary) = readAndSetData(testPath, cutOff)
 
-    println("Number of Sentence: " + sentences.size.toString)
-    println("Number of Token: " + sentences.foldLeft(0)( (total, sent) => total + sent.size ).toString)
-    println("Number of Vocabulary: " + vocabulary.size.toString)
+    println("Number of Sentences: " + sentences.size.toString)
+    println("Number of Tokens: " + sentences.foldLeft(0)( (total, sent) => total + sent.size ).toString)
+    println("Number of Vocabularies: " + vocabulary.size.toString)
 
 
     val hmmParams = Range(0, layerN).par.map { _ =>
