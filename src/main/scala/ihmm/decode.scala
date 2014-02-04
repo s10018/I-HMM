@@ -93,7 +93,7 @@ object Decode {
       } minBy {
         case (n, m) => best_score(n.pos)(n.state) 
       }
-
+      println(best_score(pair._1.pos)(pair._1.state))
       def detectPath(pair: State, path: List[Int]): List[Int] = {
         pair match {
           case State(-1, m) => m :: path
@@ -166,7 +166,7 @@ object Decode {
     val param = makeParam(probs.head)
     val vocab = probs.tail.head.toSet
     val models = LoadModel(param, probs.tail.tail)
-
+    println(models)
     output(document.map {
       sentence => decoding(sentence, param, vocab, models)
     })
