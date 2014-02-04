@@ -7,14 +7,14 @@ import collection.mutable.{ListBuffer => ListBf}
 import collection.mutable.{Map => mMap}
 
 object Train {
-  val usage = "usage: jave -jar PL-MRF.jar train -test testfile -layer layer_n -state state_n -c cut-off -dump dumpfile"
+  val usage = "usage: jave -jar PL-MRF.jar train -train trainfile -layer layer_n -state state_n -c cut-off -dump dumpfile"
   val UNKNOWN = "##UNKNOWN##"
 
   def parseTrain(opt: Map[String, String], rest :List[String]): Map[String, String] = {
     try {
       rest match {
         case Nil => opt
-        case "-test" :: testPath :: rest
+        case "-train" :: testPath :: rest
             => parseTrain(opt ++ Map("testPath" -> testPath), rest)
         case "-layer" :: layerN :: rest
             => parseTrain(opt ++ Map("layerN"   -> layerN  ), rest)

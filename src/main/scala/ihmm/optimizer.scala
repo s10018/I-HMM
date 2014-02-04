@@ -10,7 +10,7 @@ object Optimizer {
   type Gamma = Array[Array[Double]]
   type Xi    = Array[Array[Array[Double]]]
 
-  val Threshold = 0.0001
+  val Threshold = 0.001
 
   def run(sentences: Array[Array[String]], vocabulary: Array[String], stateN: Int): HMMparameter = {
     def BaumWelch: HMMparameter = {
@@ -73,7 +73,9 @@ object Optimizer {
           Range(0, stateN).iterator.foreach { stateK =>
             vocabulary.iterator.foreach { word =>
               val emitedMass = gamma.zip(sentence).filter( gammaKword => gammaKword._2 == word ).map( gammaKword => gammaKword._1(stateK) )
-              emitProbMass(stateK)(word) = Utils.logSumExp(emitProbMass(stateK)(word) +: emitedMass)
+              if (emitedMass.size != 0) {
+                emitProbMass(stateK)(word) = Utils.logSumExp(emitProbMass(stateK)(word) +: emitedMass)
+              }
             }
           }
         }

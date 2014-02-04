@@ -42,26 +42,26 @@ class HMMparameter(_initProb: Array[Double], _transeProb: Array[Array[Double]], 
   val emitProb   = _emitProb    // emitProb(state)(word)
 
   def printInitProb(layerK: Int, fileP: PrintWriter): Unit = {
-    initProb.zipWithIndex.foreach { probState =>
+    initProb.iterator.zipWithIndex.foreach { probState =>
       fileP.println("I" + " "  + layerK.toString + " " + probState._2.toString + " " + probState._1.toString)
     }
     //println("I: " + Utils.logSumExp(initProb).toString)
   }
   def printTranseProb(layerK: Int, fileP: PrintWriter): Unit = {
-    transeProb.zipWithIndex.foreach { probsPreState =>
+    transeProb.iterator.zipWithIndex.foreach { probsPreState =>
       val probs    = probsPreState._1
       val preState = probsPreState._2
-      probs.zipWithIndex.foreach { probState =>
+      probs.iterator.zipWithIndex.foreach { probState =>
         fileP.println("T" + " " + layerK.toString + " " + preState.toString + " " + probState._2.toString + " " + probState._1.toString)
       }
       //println("E: " + Utils.logSumExp(probs).toString)
     }
   }
   def printEmitProb(layerK: Int, fileP: PrintWriter): Unit = {
-    emitProb.zipWithIndex.foreach { pMapState =>
+    emitProb.iterator.zipWithIndex.foreach { pMapState =>
       val probPairs = pMapState._1.toList
       val state    = pMapState._2
-      probPairs.foreach { probPair =>
+      probPairs.iterator.foreach { probPair =>
         fileP.println("E" + " " + layerK.toString + " " + state.toString + " " + probPair._1 + " " + probPair._2)
       }
       //println("E: " + Utils.logSumExp(probPairs.map { pair => pair._2 }).toString)
