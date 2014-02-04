@@ -4,7 +4,7 @@ import scala.io.Source
 
 object ConllParse {
 
-  val usage = "usage: ./target/start scala.tools.ConllParse file file file ..."
+  val usage = "usage: java -jar I-HMM.jar conll file file file ..."
 
   def onlySurface(lines :String): String = lines.split('\t')(1)
 
