@@ -10,22 +10,22 @@ object HMMparamFactory {
 
   val r_gen = new Random
 
-  def randomInit2(vocabulary: List[String], stateN: Int): HMMparameter = {
-    val initProb   = randomLogProb(stateN).toArray
-    val transeProb = Range(0, stateN).toArray.map( stateK => randomLogProb(stateN).toArray )
+  def randomInit2(vocabulary: Array[String], stateN: Int): HMMparameter = {
+    val initProb   = randomLogProb(stateN)
+    val transeProb = Range(0, stateN).toArray.map( stateK => randomLogProb(stateN) )
     val emitProb   = Range(0, stateN).toArray.map { stateK =>
       vocabulary.zip(randomLogProb(vocabulary.size)).toMap
     }
     new HMMparameter(initProb, transeProb, emitProb)
   }
-  def randomLogProb(sizeN: Int): List[Double] = {
-    val probMass = Range(0, sizeN).toList.map(i => r_gen.nextDouble + 0.5)
+  def randomLogProb(sizeN: Int): Array[Double] = {
+    val probMass = Range(0, sizeN).iterator.map(i => r_gen.nextDouble + 0.5)
     val logNmlz  = math.log(probMass.sum)
     probMass.map { pMass =>
       math.log(pMass) - logNmlz
-    }
+    }.toArray
   }
-  def randomInit(vocabulary: List[String], stateN: Int): HMMparameter = {
+  def randomInit(vocabulary: Array[String], stateN: Int): HMMparameter = {
     val initProb   = DirRand.logRandom(stateN, 2.0).toArray
     val transeProb = Range(0, stateN).toArray.map( stateK => DirRand.logRandom(stateN, 2.0).toArray )
     val emitProb   = Range(0, stateN).toArray.map { stateK =>
@@ -71,10 +71,10 @@ class HMMparameter(_initProb: Array[Double], _transeProb: Array[Array[Double]], 
 
 
 // alphas(seq)(state), betas(seq)(state)
-class FBparameter(_alphas: List[Array[Double]], _betas: List[Array[Double]]) {
+class FBparameter(_alphas: Array[Array[Double]], _betas: Array[Array[Double]]) {
 
-  type Gamma = List[Array[Double]]
-  type Xi    = List[Array[Array[Double]]]
+  type Gamma = Array[Array[Double]]
+  type Xi    = Array[Array[Array[Double]]]
 
   require(_alphas.size == _betas.size)
   val alphas = _alphas
@@ -93,7 +93,7 @@ class FBparameter(_alphas: List[Array[Double]], _betas: List[Array[Double]]) {
     }
   }
   // xi(seq)(preState)(nextState)
-  def convert2xi(hmmParam: HMMparameter, sentence: List[String]): Xi = {
+  def convert2xi(hmmParam: HMMparameter, sentence: Array[String]): Xi = {
     (betas.tail.zip(alphas.init)).zip(sentence.tail).map { betaAlWd =>
       val betaN     = betaAlWd._1._1
       val alphaPreN = betaAlWd._1._2

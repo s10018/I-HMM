@@ -7,90 +7,92 @@ import collection.mutable.{Map => mMap}
 
 
 object Optimizer {
-  type Gamma = List[Array[Double]]
-  type Xi    = List[Array[Array[Double]]]
+  type Gamma = Array[Array[Double]]
+  type Xi    = Array[Array[Array[Double]]]
 
   val Threshold = 0.0001
 
-  def run(sentences: List[List[String]], vocabulary: List[String], stateN: Int): HMMparameter = {
+  def run(sentences: Array[Array[String]], vocabulary: Array[String], stateN: Int): HMMparameter = {
     def BaumWelch: HMMparameter = {
-      def calcLogLike(fbParams: List[FBparameter]): Double = {
-        fbParams.foldLeft(0.0) { (accumLogLike, fbParam) =>
-          accumLogLike + fbParam.logLike
-        }
-      }
-      def EStep(hmmParam: HMMparameter): List[FBparameter] = {
-        sentences.map { sentence =>
-          val alphas = ListBf.empty[Array[Double]] += (Range(0, stateN).toArray.map { stateK =>
-            hmmParam.initProb(stateK) + hmmParam.emitProb(stateK)(sentence.head)
+      def calcAlpha(sentence: Array[String], hmmParam: HMMparameter): Array[Array[Double]] = {
+        val alphas = ListBf.empty[Array[Double]] += (Range(0, stateN).toArray.map { stateK =>
+          hmmParam.initProb(stateK) + hmmParam.emitProb(stateK)(sentence.head)
+        })
+        sentence.tail.foldLeft(alphas) { (_alphas, word) =>
+          _alphas += (Range(0, stateN).toArray.map { stateK =>
+            val logProbs = _alphas.last.zipWithIndex.map { probState =>
+              probState._1 + hmmParam.transeProb(probState._2)(stateK)
+            }
+            Utils.logSumExp(logProbs) + hmmParam.emitProb(stateK)(word)
           })
-          sentence.tail.foldLeft(alphas) { (_alphas, word) =>
-            _alphas += (Range(0, stateN).toArray.map { stateK =>
-              val logProbs = _alphas.last.zipWithIndex.map { probState =>
-                probState._1 + hmmParam.transeProb(probState._2)(stateK)
-              }
-              Utils.logSumExp(logProbs) + hmmParam.emitProb(stateK)(word)
-            })
-          }
-          val betas = ListBf.empty[Array[Double]] += (Range(0, stateN).toArray.map(_ => 0.0))
-          sentence.tail.reverse.foldLeft(betas) { (_betas, word) =>
-            val beta = Range(0, stateN).toArray.map { stateK =>
-              val logProbs = _betas.head.zipWithIndex.map { probState =>
-                probState._1 + hmmParam.emitProb(probState._2)(word) + hmmParam.transeProb(stateK)(probState._2)
-              }
-              Utils.logSumExp(logProbs)
-            }
-            beta +=: betas
-          }
-          new FBparameter(alphas.toList, betas.toList)
-        }
+        }.toArray
       }
-      def MStep(fbParams: List[FBparameter], hmmParam: HMMparameter): HMMparameter = {
-        def updateInitProb(gammas: List[Gamma]): Array[Double] = {
-          val denom = Utils.logSumExp(gammas.map(gamma => Utils.logSumExp(gamma.head.toList)))
-          Range(0, stateN).toArray.map { stateK =>
-            Utils.logSumExp(gammas.map(gamma => gamma.head(stateK))) - denom
-          }
-        }
-        def updateTranseProb(xis: List[Xi]): Array[Array[Double]] = {
-          val xis2 = xis.filter(xi => xi.size != 0)
-          Range(0, stateN).toArray.map { preStateK =>
-            val denom = Utils.logSumExp(xis2.map { xi =>
-              Utils.logSumExp(xi.map { xiN =>
-                Utils.logSumExp(xiN(preStateK))
-              })
-            })
-            Range(0, stateN).toArray.map { nextStateK =>
-              Utils.logSumExp(xis2.map { xi =>
-                Utils.logSumExp(xi.map( xiN => xiN(preStateK)(nextStateK) ))
-              }) - denom
+      def calcBeta(sentence: Array[String], hmmParam: HMMparameter): Array[Array[Double]] = {
+        val betas = ListBf.empty[Array[Double]] += ( Range(0, stateN).toArray.map(_ => 0.0) )
+        sentence.tail.reverse.foldLeft(betas) { (_betas, word) =>
+          val beta = Range(0, stateN).toArray.map { stateK =>
+            val logProbs = _betas.head.zipWithIndex.map { probState =>
+              probState._1 + hmmParam.emitProb(probState._2)(word) + hmmParam.transeProb(stateK)(probState._2)
             }
+            Utils.logSumExp(logProbs)
           }
-        }
-        def updateEmitProb(gammas: List[Gamma]): Array[Map[String, Double]] = {
-          Range(0, stateN).toArray.map { stateK =>
-            val denom = Utils.logSumExp(gammas.map { gamma =>
-              Utils.logSumExp(gamma.map(gammaN => gammaN(stateK)))
-            })
-            vocabulary.foldLeft(mMap.empty[String, Double]) { (emitMap, word) =>
-              val emitLogProb = Utils.logSumExp(gammas.zip(sentences).foldLeft(ListBf.empty[Double]) { (logProbs, gammaSent) =>
-                val gamma    = gammaSent._1
-                val sentence = gammaSent._2
-                logProbs ++= gamma.zip(sentence).filter( gammaWd => gammaWd._2 == word ).map( gammaWd => gammaWd._1(stateK) )
-              }) - denom
-              emitMap + (word -> emitLogProb)
-            }.toMap
-          }
-        }
-        val gammas = fbParams.map { fbParam => fbParam.convert2gamma }
-        val xis    = fbParams.zip(sentences).map { fbParamSent => fbParamSent._1.convert2xi(hmmParam, fbParamSent._2) }
-
-        new HMMparameter(updateInitProb(gammas), updateTranseProb(xis), updateEmitProb(gammas))
+          beta +=: betas
+        }.toArray
       }
       def _BaumWelch(oldHMMparam: HMMparameter, oldLogLike: Double): HMMparameter = {
-        val newFBparams  = EStep(oldHMMparam)
-        val newHMMparam  = MStep(newFBparams, oldHMMparam)
-        val newLogLike   = calcLogLike(newFBparams)
+        var newLogLike = 0.0
+
+        val initProbMass:   Array[Double]               = Array.fill(stateN)(Double.NegativeInfinity)
+        val transeProbMass: Array[Array[Double]]        = Array.tabulate(stateN) { _ => Array.fill(stateN)(Double.NegativeInfinity) }
+        val emitProbMass:   Array[mMap[String, Double]] = Array.tabulate(stateN) { _ =>
+          vocabulary.iterator.foldLeft(mMap.empty[String, Double]) { (_map, word) => _map + (word -> Double.NegativeInfinity) }
+        }
+
+        sentences.iterator.foreach { sentence =>
+          // M Step
+          val alpha = calcAlpha(sentence, oldHMMparam)
+          val beta  = calcBeta(sentence, oldHMMparam)
+
+          val fbParam = new FBparameter(alpha, beta)
+          val gamma   = fbParam.convert2gamma
+          val xi      = fbParam.convert2xi(oldHMMparam, sentence)
+          newLogLike += fbParam.logLike
+
+          // E Step
+          Range(0, stateN).iterator.foreach { stateK =>
+            initProbMass(stateK) = Utils.logSumExp2(initProbMass(stateK), gamma(0)(stateK))
+          }
+          if (sentence.size > 1) {
+            Range(0, stateN).iterator.foreach { preStateK =>
+              Range(0, stateN).iterator.foreach { nextStateK =>
+                val seqProbSum = Utils.logSumExp( xi.map { xiN => xiN(preStateK)(nextStateK) } )
+                transeProbMass(preStateK)(nextStateK) = Utils.logSumExp2(transeProbMass(preStateK)(nextStateK), seqProbSum)
+              }
+            }
+          }
+          Range(0, stateN).iterator.foreach { stateK =>
+            vocabulary.iterator.foreach { word =>
+              val emitedMass = gamma.zip(sentence).filter( gammaKword => gammaKword._2 == word ).map( gammaKword => gammaKword._1(stateK) )
+              emitProbMass(stateK)(word) = Utils.logSumExp(emitProbMass(stateK)(word) +: emitedMass)
+            }
+          }
+        }
+        val initProbDenom = Utils.logSumExp(initProbMass)
+        Range(0, stateN).iterator.foreach { stateK => initProbMass(stateK) -= initProbDenom }
+        val transeProbDenoms = Range(0, stateN).iterator.map { stateK => Utils.logSumExp(transeProbMass(stateK)) }
+        transeProbDenoms.zipWithIndex.foreach { denomPreStateK =>
+          val denom     = denomPreStateK._1
+          val preStateK = denomPreStateK._2
+          Range(0, stateN).iterator.foreach { nextStateK => transeProbMass(preStateK)(nextStateK) -= denom }
+        }
+        val emitProbDenoms = Range(0, stateN).iterator.map { stateK => Utils.logSumExp(emitProbMass(stateK).values.toArray) }
+        emitProbDenoms.zipWithIndex.foreach { denomStateK =>
+          val denom  = denomStateK._1
+          val stateK = denomStateK._2
+          vocabulary.iterator.foreach { word => emitProbMass(stateK)(word) -= denom }
+        }
+
+        val newHMMparam = new HMMparameter(initProbMass, transeProbMass, emitProbMass.map( _mmap => _mmap.toMap ))
 
         if ((newLogLike - oldLogLike).abs < Threshold)
           newHMMparam
@@ -98,8 +100,9 @@ object Optimizer {
           _BaumWelch(newHMMparam, newLogLike)
       }
       val initialHMMparam = HMMparamFactory.randomInit(vocabulary, stateN)
-      val initialFBparams = EStep(initialHMMparam)
-      val initialLogLike  = calcLogLike(initialFBparams)
+      val initialLogLike  = sentences.iterator.foldLeft(0.0) { (_logLike, sentence) =>
+        _logLike + Utils.logSumExp(calcAlpha(sentence, initialHMMparam).last)
+      }
       _BaumWelch(initialHMMparam, initialLogLike)
     }
     BaumWelch

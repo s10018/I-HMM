@@ -28,4 +28,10 @@ object Utils {
     }
     maxLogProb + math.log(expSum)
   }
+
+  def logSumExp2(logProb1: Double, logProb2: Double): Double = {
+    val maxLogProb = if (logProb1 > logProb2) logProb1 else logProb2
+    val expSum = math.exp(logProb1 - maxLogProb) + math.exp(logProb2 - maxLogProb)
+    maxLogProb + math.log(expSum)
+  }
 }
