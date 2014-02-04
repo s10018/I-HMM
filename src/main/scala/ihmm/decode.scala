@@ -51,7 +51,8 @@ object Decode {
     }
   }
 
-  def decoding(tokens: Array[String], param: Param, models: Map[Int, Model]): IndexedSeq[Features] = {
+  def decoding(tokens: Array[String], param: Param, vocab: Set[String], models: Map[Int, Model]): 
+      IndexedSeq[Features] = {
 
     val seqfs = for (m <- param.getRange("M")) yield {
       val model = models(m)
@@ -64,7 +65,10 @@ object Decode {
 
       // init
       for (k <- Range(0, param.get("K"))) {
-        best_score(0) += k -> (- model.init.get(k) - model.emit.get(k, tokens(0)))
+        if (vocab.contains(tokens(0)))
+          best_score(0) += k -> (- model.init.get(k) - model.emit.get(k, tokens(0)))
+        else
+          best_score(0) += k -> (- model.init.get(k) - model.emit.get(k, UNK))
         best_path += State(0, k) -> State(-1, k)
       }
       // calculating best_score
@@ -77,16 +81,19 @@ object Decode {
           }
           val best = tmp_result.minBy(_._2)
           best_path += State(i, k) -> State(i-1, best._1) // now -> prev path
-          best_score(i) += k -> (- model.emit.get(k, tokens(i-1)) + best._2) // i th token's best score
+          if (vocab.contains(tokens(i)))
+            best_score(i) += k -> (- model.emit.get(k, tokens(i)) + best._2) // i th token's best score
+          else
+            best_score(i) += k -> (- model.emit.get(k, UNK) + best._2) // i th token's best score
         }
       }
 
-      val pair = best_path filter { 
-        case (n, m) => (n.pos == tokens.size - 1)
+      val pair = best_path filter {case (n, m) =>
+        (n.pos == tokens.size - 1)
       } minBy {
         case (n, m) => best_score(n.pos)(n.state) 
       }
-
+      println(best_score(pair._1.pos)(pair._1.state))
       def detectPath(pair: State, path: List[Int]): List[Int] = {
         pair match {
           case State(-1, m) => m :: path
@@ -103,8 +110,8 @@ object Decode {
 
   def LoadModel(param: Param, probs: List[Array[String]]): Map[Int, Model] = {
     param.getRange("M") map {m =>
-      def parse(init:Map[Int, Double], emit:Map[Int, Map[String, Double]],
-        trans:Map[Int, Map[Int, Double]], rest: List[Array[String]]): Model = {
+      def parse(init: Map[Int, Double], emit:Map[Int, Map[String, Double]],
+        trans: Map[Int, Map[Int, Double]], rest: List[Array[String]]): Model = {
         rest match {
           case Nil => Model(m, InitProb(init), EmitProb(emit), TransProb(trans))
           case _ => {
@@ -157,10 +164,11 @@ object Decode {
     val document = LoadFile(filename)
     val probs = LoadFile(probfilename)
     val param = makeParam(probs.head)
-    val models = LoadModel(param, probs.tail)
-
+    val vocab = probs.tail.head.toSet
+    val models = LoadModel(param, probs.tail.tail)
+    println(models)
     output(document.map {
-      sentence => decoding(sentence, param, models)
+      sentence => decoding(sentence, param, vocab, models)
     })
 
   }

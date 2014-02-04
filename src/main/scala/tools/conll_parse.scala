@@ -11,7 +11,7 @@ object ConllParse {
   def surfacePOS(lines :String): String = lines.split('\t')(1) + "/" + lines.split('\t')(4)
 
   def parse_conll_file(filename:String): List[String] = {
-    def nextLine(file_iter:Iterator[String],
+    def nextLine(file_iter: Iterator[String],
       tmplist: List[String], res: List[String]): List[String] = {
       if (!file_iter.hasNext) res
       else

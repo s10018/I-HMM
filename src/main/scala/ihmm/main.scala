@@ -24,7 +24,7 @@ object Main {
   }
 
   def main(args: Array[String]): Unit = {
-   try {
+   //try {
       val opt = ArgumentParse(Map(), args.toList)
       opt.get("mode") match {
         case Some("train") => Train.train(opt)
@@ -32,9 +32,9 @@ object Main {
         case Some("conll") => ConllParse.parse(opt)
         case _ => sys.error("Illegal Argument!!")
       }
-    } catch {
-      case e: RuntimeException => println(usage)
-    }
+    // } catch {
+    //   case e: RuntimeException => println(usage)
+    // }
   }
 
 }
