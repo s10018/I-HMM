@@ -33,8 +33,10 @@ object Optimizer {
     val emitProbMass:   Array[mMap[String, Double]] = Array.tabulate(stateN) { _ =>
       vocabulary.iterator.foldLeft(mMap.empty[String, Double]) { (_map, word) => _map + (word -> Double.NegativeInfinity) }
     }
-
-    sentences.iterator.foreach { sentence =>
+    val sentN: Int = sentences.length
+    var idx:   Int = 0
+    while (idx < sentN) {
+      val sentence = sentences(idx)
       // E Step
       val alpha = calcAlpha(sentence, oldHMMparam, stateN)
       val beta  = calcBeta( sentence, oldHMMparam, stateN)
@@ -64,6 +66,7 @@ object Optimizer {
           }
         }
       }
+      idx += 1
     }
     val initProbDenom = Utils.logSumExp(initProbMass)
     Range(0, stateN).iterator.foreach { stateK => initProbMass(stateK) -= initProbDenom }
