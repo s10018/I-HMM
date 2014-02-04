@@ -7,14 +7,14 @@ import collection.mutable.{ListBuffer => ListBf}
 import collection.mutable.{Map => mMap}
 
 object Train {
-  val usage = "usage: jave -jar PL-MRF.jar train -test testfile -layer layer_n -state state_n -c cut-off -dump dumpfile"
+  val usage = "usage: jave -jar PL-MRF.jar train -train trainfile -layer layer_n -state state_n -c cut-off -dump dumpfile"
   val UNKNOWN = "##UNKNOWN##"
 
   def parseTrain(opt: Map[String, String], rest :List[String]): Map[String, String] = {
     try {
       rest match {
         case Nil => opt
-        case "-test" :: testPath :: rest
+        case "-train" :: testPath :: rest
             => parseTrain(opt ++ Map("testPath" -> testPath), rest)
         case "-layer" :: layerN :: rest
             => parseTrain(opt ++ Map("layerN"   -> layerN  ), rest)
@@ -68,23 +68,21 @@ object Train {
     fileP.close
   }
 
-  def readAndSetData(testPath: String, cutOff: Int): (List[List[String]], List[String]) = {
-    def convert2sentences(testPath: String): ListBf[List[String]] = {
-      def split2words(sentence: String): List[String] = {
-        sentence.split(" ").toList
+  def readAndSetData(testPath: String, cutOff: Int): (Array[Array[String]], Array[String]) = {
+    def convert2sentences(testPath: String): Array[Array[String]] = {
+      def split2words(sentence: String): Array[String] = {
+        sentence.split(" ")
       }
       val s = Source.fromFile(testPath)
-      val sentences = ListBf.empty[List[String]]
+      val sentences = ListBf.empty[Array[String]]
 
-      for (line <- s.getLines) {
-        sentences += split2words(line)
-      }
+      s.getLines.foreach { line => sentences += split2words(line) }
       s.close
-      sentences
+      sentences.toArray
     }
-    def countFreq(sentences: ListBf[List[String]]): mMap[String, Int] = {
-      sentences.foldLeft(mMap.empty[String, Int]) { (mapC, sentence) =>
-        sentence.foldLeft(mapC) { (_mapC, word) =>
+    def countFreq(sentences: Array[Array[String]]): mMap[String, Int] = {
+      sentences.iterator.foldLeft(mMap.empty[String, Int]) { (mapC, sentence) =>
+        sentence.iterator.foldLeft(mapC) { (_mapC, word) =>
           _mapC + (word -> (_mapC.getOrElse(word, 0) + 1))
         }
       }
@@ -92,26 +90,27 @@ object Train {
     def extractLowFreqWord(wordFreq: mMap[String, Int]): mMap[String, Int] = {
       wordFreq.filter(wdCount => wdCount._2 <= cutOff)
     }
-    def excludeLowFreqWord(sentences: ListBf[List[String]], lowFreqWord: mMap[String, Int]): List[List[String]] = {
-      sentences.map { sentence =>
-        sentence.map { word => if (lowFreqWord.contains(word)) UNKNOWN else word }
-      }.toList
+    def excludeLowFreqWord(sentences: Array[Array[String]], lowFreqWord: mMap[String, Int]): Unit = {
+      sentences.iterator.foreach { sentence =>
+        Range(0, sentence.size).iterator.foreach { k =>
+          sentence(k) = if (lowFreqWord.contains(sentence(k))) UNKNOWN else sentence(k)
+        }
+      }
     }
-    def examinVocabulary(wordFreq: mMap[String, Int], lowFreqWord: mMap[String, Int]): List[String] = {
+    def examinVocabulary(wordFreq: mMap[String, Int], lowFreqWord: mMap[String, Int]): Array[String] = {
       val preVocabulary = wordFreq.filter { wdCount => wdCount._2 > cutOff }
       if (lowFreqWord.size == 0) {
-        preVocabulary.keys.toList
+        preVocabulary.keys.toArray
       } else {
-        UNKNOWN :: (preVocabulary.keys.toList)
+        UNKNOWN +: preVocabulary.keys.toArray
       }
     }
     val sentences   = convert2sentences(testPath)
     val wordFreq    = countFreq(sentences)
     val lowFreqWord = extractLowFreqWord(wordFreq)
-
-    val sentences2  = excludeLowFreqWord(sentences, lowFreqWord)
     val vocabulary  = examinVocabulary(wordFreq, lowFreqWord)
+    excludeLowFreqWord(sentences, lowFreqWord)
 
-    (sentences2, vocabulary)
+    (sentences, vocabulary)
   }
 }
