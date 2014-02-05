@@ -26,12 +26,22 @@ object Main {
   def main(args: Array[String]): Unit = {
    //try {
     val opt = ArgumentParse(Map(), args.toList)
+<<<<<<< HEAD
     opt.get("mode") match {
       case Some("train") => Train.train(opt)
       case Some("decode") => Decode.decode(opt)
       case Some("conll") => ConllParse.parse(opt)
       case _ => sys.error("Illegal Argument!!")
     }
+=======
+    println(opt)
+      opt.get("mode") match {
+        case Some("train") => Train.train(opt)
+        case Some("decode") => Decode.decode(opt)
+        case Some("conll") => ConllParse.parse(opt)
+        case _ => sys.error("Illegal Argument!!")
+      }
+>>>>>>> 2833873f2097f06ceac4c728048708671c09d674
     // } catch {
     //   case e: RuntimeException => println(usage)
     // }
