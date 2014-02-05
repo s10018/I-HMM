@@ -49,7 +49,7 @@ object makeFeatures {
       val words = lines map {line:String =>
         extractFeature(line).mkString("\t")
       } 
-      (words).mkString("\n") + "\n"
+      (words).mkString("\n") + "\n \n"
     }
   }
 
