@@ -17,7 +17,8 @@ object Optimizer {
   }
 
   def BaumWelch(sentences: Array[Array[String]], vocabulary: Array[String], stateN: Int): HMMparameter = {
-    val initialHMMparam = HMMparamFactory.randomInit(vocabulary, stateN)
+    //val initialHMMparam = HMMparamFactory.randomInit(vocabulary, stateN)
+    val initialHMMparam = HMMparamFactory.meanDistInit(vocabulary, stateN)
     _BaumWelch(initialHMMparam, Double.NegativeInfinity, sentences, vocabulary, stateN)
   }
 
@@ -27,8 +28,10 @@ object Optimizer {
 
     val initProbMass:   Array[Double]               = Array.fill(stateN)(Double.NegativeInfinity)
     val transeProbMass: Array[Array[Double]]        = Array.tabulate(stateN) { _ => Array.fill(stateN)(Double.NegativeInfinity) }
-    val emitProbMass:   Array[mMap[String, Double]] = Array.tabulate(stateN) { _ =>
-      vocabulary.iterator.foldLeft(mMap.empty[String, Double]) { (_map, word) => _map + (word -> Double.NegativeInfinity) }
+    val emitProbMass:   Array[mMap[String, Double]] = Array.tabulate(stateN) { stateK =>
+      val _map = mMap.empty[String, Double]
+      vocabulary.iterator.foreach { word => _map(word) = Double.NegativeInfinity }
+      _map
     }
     val sentN: Int = sentences.size
     var idx: Int   = 0
