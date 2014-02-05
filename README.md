@@ -4,12 +4,12 @@ I-HMM
 We implement I-HMM described in <http://www.cis.temple.edu/~yates/papers/2011-conll-fhmm-lang-model.pdf>.
 
 Required
-======
+-----------
 
 You need [sbt](http://www.scala-sbt.org/) for performing this program.
 
 How to performed
-======
+-----------
 
 The sample as below
 
@@ -18,7 +18,7 @@ The sample as below
 
 
 How to make jar file
-======
+-----------
 
 You can make the jar file by commands below.
 
@@ -33,7 +33,7 @@ Run:
 
 
 Reference
-====
+-----------
 
-Huang et. al. (Language Models as Representations for Weakly-Supervised NLP Tasks)[http://www.cis.temple.edu/~yates/papers/2011-conll-fhmm-lang-model.pdf], CoNLL 2011
+Huang et. al. [Language Models as Representations for Weakly-Supervised NLP Tasks](http://www.cis.temple.edu/~yates/papers/2011-conll-fhmm-lang-model.pdf), CoNLL 2011
 
