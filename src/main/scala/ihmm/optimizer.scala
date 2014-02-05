@@ -17,8 +17,8 @@ object Optimizer {
   }
 
   def BaumWelch(sentences: Array[Array[String]], vocabulary: Array[String], stateN: Int): HMMparameter = {
-    //val initialHMMparam = HMMparamFactory.randomInit(vocabulary, stateN)
-    val initialHMMparam = HMMparamFactory.meanDistInit(vocabulary, stateN)
+    val initialHMMparam = HMMparamFactory.randomInit(vocabulary, stateN)
+    //val initialHMMparam = HMMparamFactory.meanDistInit(vocabulary, stateN)
     _BaumWelch(initialHMMparam, Double.NegativeInfinity, sentences, vocabulary, stateN)
   }
 
