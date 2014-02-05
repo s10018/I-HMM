@@ -33,6 +33,17 @@ object HMMparamFactory {
     }
     new HMMparameter(initProb, transeProb, emitProb)
   }
+  def meanDistInit(vocabulary: Array[String], stateN: Int): HMMparameter = {
+    val mean1 = math.log(1.0 / stateN)
+    val mean2 = math.log(1.0 / vocabulary.size)
+
+    val initProb   = Range(0, stateN).toArray.map(_ => mean1)
+    val transeProb = Range(0, stateN).toArray.map( stateK => Range(0, stateN).toArray.map(_ => mean1) )
+    val emitProb   = Range(0, stateN).toArray.map { stateK =>
+      vocabulary.zip(Array.fill(vocabulary.size)(mean2)).toMap
+    }
+    new HMMparameter(initProb, transeProb, emitProb)
+  }
 }
 
 
