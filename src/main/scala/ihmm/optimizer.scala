@@ -47,18 +47,18 @@ object Optimizer {
       newLogLike += fbParam.logLike
 
       // M Step
-      Range(0, stateN).iterator.foreach { stateK =>
+      Range(0, stateN).foreach { stateK =>
         initProbMass(stateK) = Utils.logSumExp2(initProbMass(stateK), gamma(0)(stateK))
       }
       if (sentence.size > 1) {
-        Range(0, stateN).iterator.foreach { preStateK =>
-          Range(0, stateN).iterator.foreach { nextStateK =>
+        Range(0, stateN).foreach { preStateK =>
+          Range(0, stateN).foreach { nextStateK =>
             val seqProbSum = Utils.logSumExp( xi.map { xiN => xiN(preStateK)(nextStateK) } )
             transeProbMass(preStateK)(nextStateK) = Utils.logSumExp2(transeProbMass(preStateK)(nextStateK), seqProbSum)
           }
         }
       }
-      Range(0, stateN).iterator.foreach { stateK =>
+      Range(0, stateN).foreach { stateK =>
         vocabulary.iterator.foreach { word =>
           val emitedMass = gamma.zip(sentence).filter( gammaKword => gammaKword._2 == word ).map( gammaKword => gammaKword._1(stateK) )
           if (emitedMass.size != 0) {
@@ -70,12 +70,12 @@ object Optimizer {
     }
 
     val initProbDenom = Utils.logSumExp(initProbMass)
-    Range(0, stateN).iterator.foreach { stateK => initProbMass(stateK) -= initProbDenom }
+    Range(0, stateN).foreach { stateK => initProbMass(stateK) -= initProbDenom }
     val transeProbDenoms = Range(0, stateN).iterator.map { stateK => Utils.logSumExp(transeProbMass(stateK)) }
     transeProbDenoms.zipWithIndex.foreach { denomPreStateK =>
       val denom     = denomPreStateK._1
       val preStateK = denomPreStateK._2
-      Range(0, stateN).iterator.foreach { nextStateK => transeProbMass(preStateK)(nextStateK) -= denom }
+      Range(0, stateN).foreach { nextStateK => transeProbMass(preStateK)(nextStateK) -= denom }
     }
     val emitProbDenoms = Range(0, stateN).iterator.map { stateK => Utils.logSumExp(emitProbMass(stateK).values.toArray) }
     emitProbDenoms.zipWithIndex.foreach { denomStateK =>

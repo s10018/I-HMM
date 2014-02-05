@@ -48,9 +48,9 @@ object HMMparamFactory {
 
 
 class HMMparameter(_initProb: Array[Double], _transeProb: Array[Array[Double]], _emitProb: Array[Map[String, Double]]) {
-  val initProb   = _initProb    
+  val initProb   = _initProb
   val transeProb = _transeProb  // transeProb(preState)(nextState)
-  val emitProb   = _emitProb    // emitProb(state)(word)
+   val emitProb   = _emitProb    // emitProb(state)(word)
 
   def printInitProb(layerK: Int, fileP: PrintWriter): Unit = {
     initProb.iterator.zipWithIndex.foreach { probState =>
@@ -87,7 +87,6 @@ class FBparameter(_alphas: Array[Array[Double]], _betas: Array[Array[Double]]) {
   type Gamma = Array[Array[Double]]
   type Xi    = Array[Array[Array[Double]]]
 
-  require(_alphas.size == _betas.size)
   val alphas = _alphas
   val betas  = _betas
   val seqN   = _alphas.size
@@ -97,22 +96,19 @@ class FBparameter(_alphas: Array[Array[Double]], _betas: Array[Array[Double]]) {
 
   // gamma(seq)(state)
   def convert2gamma: Gamma = {
-    alphas.zip(betas).map { alphaBeta =>
-      Range(0, stateN).toArray.map { stateK =>
-        alphaBeta._1(stateK) + alphaBeta._2(stateK) - logLike
-      }
-    }
+    Range(0, seqN).map { seqK =>
+      Range(0, stateN).map { stateK =>
+        alphas(seqK)(stateK) + betas(seqK)(stateK) - logLike
+      }.toArray
+    }.toArray
   }
   // xi(seq)(preState)(nextState)
   def convert2xi(hmmParam: HMMparameter, sentence: Array[String]): Xi = {
-    (betas.tail.zip(alphas.init)).zip(sentence.tail).map { betaAlWd =>
-      val betaN     = betaAlWd._1._1
-      val alphaPreN = betaAlWd._1._2
-      val wordN     = betaAlWd._2
-      Range(0, stateN).toArray.map { preStateK =>
-        Range(0, stateN).toArray.map { nextStateK =>
-          alphaPreN(preStateK) + hmmParam.emitProb(nextStateK)(wordN)
-          + hmmParam.transeProb(preStateK)(nextStateK) + betaN(nextStateK) - logLike
+    Array.tabulate(seqN - 1) { seqK =>
+      Array.tabulate(stateN) { preStateK =>
+        Array.tabulate(stateN) { stateK =>
+          alphas(seqK)(preStateK) + hmmParam.emitProb(stateK)(sentence(seqK))
+          + hmmParam.transeProb(preStateK)(stateK) + betas(seqK + 1)(stateK) - logLike
         }
       }
     }
