@@ -13,7 +13,7 @@ object Main {
         case "train" :: rest
             => Train.parseTrain(map ++ Map("mode" -> "train"), rest)
         case "decode" :: rest
-            => Decode.parseDecode(map ++ Map("mode" -> "decode"), rest)
+            => Decode.parseDecode(map, rest)
         case "conll" :: rest
             => Map("mode" -> "conll", "file" -> rest.mkString(" "))
         case _ 
@@ -25,7 +25,8 @@ object Main {
 
   def main(args: Array[String]): Unit = {
    //try {
-      val opt = ArgumentParse(Map(), args.toList)
+    val opt = ArgumentParse(Map(), args.toList)
+    println(opt)
       opt.get("mode") match {
         case Some("train") => Train.train(opt)
         case Some("decode") => Decode.decode(opt)

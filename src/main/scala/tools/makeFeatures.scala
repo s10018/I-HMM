@@ -45,10 +45,11 @@ object makeFeatures {
   }
 
   def parse_conll_file(filename: String, decode: Boolean): List[String] = {
-    splitBySeparator(Source.fromFile(filename).getLines.toList, "") map {lines =>
-      lines map {line => 
+    splitBySeparator(Source.fromFile(filename).getLines.toList, "") map {lines:List[String] =>
+      val words = lines map {line:String =>
         extractFeature(line).mkString("\t")
-      } mkString("\n")
+      } 
+      (words).mkString("\n") + "\n"
     }
   }
 
@@ -56,9 +57,6 @@ object makeFeatures {
 
     val parser = new OptionParser[Option]("makeFeatures") {
       head("makeFeatures", "0.x")
-      // arg[String]("<file>") required() action { (x, c) =>
-      //   c.copy(file = x)
-      // } text("a file extracted")
       opt[Unit]("decode") action { (x, c) =>
         c.copy(decode = true)
       } text("decode for sentence")
@@ -70,8 +68,7 @@ object makeFeatures {
 
     parser.parse(args, Option()) map { opt =>
       opt.files foreach {file =>
-        parse_conll_file(file, opt.decode) foreach (println(_))
-        println("\n")
+        parse_conll_file(file, opt.decode) foreach (print(_))
       }
     } getOrElse {
       sys.exit(1)
