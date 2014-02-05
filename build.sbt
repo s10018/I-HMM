@@ -6,7 +6,7 @@ name := "I-HMM"
 
 version := "0.0.1"
 
-//mainClass in Compile := Some("scala.ihmm.Main")
+mainClass in Compile := Some("scala.ihmm.Main")
 
 scalacOptions ++= Seq( "-unchecked", "-deprecation" )
 
