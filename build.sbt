@@ -24,10 +24,13 @@ resolvers ++= Seq(
   "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/releases/"
 )
 
+libraryDependencies += "com.github.scopt" %% "scopt" % "3.2.0"
+
+resolvers += Resolver.sonatypeRepo("public")
+
 jarName in assembly := "I-HMM.jar"
 
 mainClass in assembly := Some("scala.ihmm.Main")
 
 assemblySettings
 
-seq(SbtStartScript.startScriptForClassesSettings: _*)

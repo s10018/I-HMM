@@ -40,11 +40,17 @@ object Decode {
     def parse(map: Map[String, String], rest :List[String]): Map[String, String] = {
       rest match {
         case Nil => map
-        case "-p" :: file :: tail => parse(map ++ Map("probfile" -> file), tail)
-        case inputfile :: tail => parse(map ++ Map("inputfile" -> inputfile), tail)
+        case inputfile :: file :: tail
+            => parse(map ++ Map("inputfile" -> inputfile) ++ Map("probfile" -> file), tail)
+        case _ => map
       }
     }
-    val opt = parse(map, rest)
+    val opt = rest match {
+      case Nil => map
+      case inputfile :: file :: tail
+          => Map("inputfile" -> inputfile, "probfile" -> file)
+      case _ => map
+    }
     opt.get("inputfile") match {
       case Some( n ) => opt
       case None => Map("mode" -> "")
