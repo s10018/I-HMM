@@ -37,18 +37,10 @@ object Decode {
   }
 
   def parseDecode(map: Map[String, String], rest :List[String]): Map[String, String] = {
-    def parse(map: Map[String, String], rest :List[String]): Map[String, String] = {
-      rest match {
-        case Nil => map
-        case inputfile :: file :: tail
-            => parse(map ++ Map("inputfile" -> inputfile) ++ Map("probfile" -> file), tail)
-        case _ => map
-      }
-    }
     val opt = rest match {
       case Nil => map
       case inputfile :: file :: tail
-          => Map("inputfile" -> inputfile, "probfile" -> file)
+          => Map("inputfile" -> inputfile, "probfile" -> file, "mode" -> "decode")
       case _ => map
     }
     opt.get("inputfile") match {
