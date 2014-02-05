@@ -18,7 +18,7 @@ object Optimizer {
 
   def BaumWelch(sentences: Array[Array[String]], vocabulary: Array[String], stateN: Int): HMMparameter = {
     val initialHMMparam = HMMparamFactory.randomInit(vocabulary, stateN)
-    _BaumWelch(initialHMMparam, 0.0, sentences, vocabulary, stateN)
+    _BaumWelch(initialHMMparam, Double.NegativeInfinity, sentences, vocabulary, stateN)
   }
 
   def _BaumWelch(oldHMMparam: HMMparameter, oldLogLike: Double,
@@ -83,7 +83,7 @@ object Optimizer {
 
     val newHMMparam = new HMMparameter(initProbMass, transeProbMass, emitProbMass.map( _mmap => _mmap.toMap ))
     println("score: " + newLogLike + ", diff: " + (newLogLike - oldLogLike).abs)
-    if ((newLogLike - oldLogLike).abs < Threshold)
+    if ((newLogLike - oldLogLike) < Threshold)
       newHMMparam
     else
       _BaumWelch(newHMMparam, newLogLike, sentences, vocabulary, stateN)
